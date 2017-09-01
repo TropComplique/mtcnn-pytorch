@@ -21,6 +21,13 @@ class PNet(nn.Module):
 
         super(PNet, self).__init__()
 
+        # suppose we have input with size HxW, then
+        # after first layer: H - 2,
+        # after pool: ceil((H - 2)/2),
+        # after second conv: ceil((H - 2)/2) - 2,
+        # after last conv: ceil((H - 2)/2) - 4,
+        # and the same for W
+
         self.features = nn.Sequential(OrderedDict([
             ('conv1', nn.Conv2d(3, 10, 3, 1)),
             ('prelu1', nn.PReLU(10)),

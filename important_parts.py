@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from PIL import Image, ImageDraw
+from PIL import Image
 import torch
 from torch.autograd import Variable
 
@@ -99,6 +99,8 @@ def generate_bboxes(probs, offsets, scale, threshold):
         a float numpy array of shape [n_boxes, 9]
     """
 
+    # applying P-Net is equivalent, in some sense, to
+    # moving 12x12 window with stride 2
     stride = 2
     cell_size = 12
 
@@ -120,6 +122,9 @@ def generate_bboxes(probs, offsets, scale, threshold):
 
     offsets = np.array([tx1, ty1, tx2, ty2])
     score = probs[inds[0], inds[1]]
+
+    # P-Net is applied to scaled images
+    # so we need to rescale bounding boxes back
     bounding_boxes = np.vstack([
         np.round((stride*inds[1] + 1.0)/scale),
         np.round((stride*inds[0] + 1.0)/scale),
@@ -127,6 +132,7 @@ def generate_bboxes(probs, offsets, scale, threshold):
         np.round((stride*inds[0] + 1.0 + cell_size)/scale),
         score, offsets
     ])
+    # why one is added?
 
     return bounding_boxes.T
 
@@ -213,39 +219,12 @@ def calibrate_box(bboxes, offsets):
     # x2_true = x2 + tx2*w
     # y2_true = y2 + ty2*h
 
+    # are offsets always such that
+    # x1 < x2 and y1 < y2 ?
+
     translation = np.hstack([w, h, w, h])*offsets
     bboxes[:, 0:4] = bboxes[:, 0:4] + translation
     return bboxes
-
-
-def show_bboxes(img, bounding_boxes, facial_landmarks=[]):
-    """Run P-Net, generate bounding boxes, and do NMS.
-
-    Arguments:
-        img: an instance of PIL.Image.
-        bounding_boxes: a float numpy array of shape [n, 5].
-        facial_landmarks: a float numpy array of shape [n, 10].
-
-    Returns:
-        an instance of PIL.Image
-    """
-
-    img_copy = img.copy()
-    draw = ImageDraw.Draw(img_copy)
-
-    for b in bounding_boxes:
-        draw.rectangle([
-            (b[0], b[1]), (b[2], b[3])
-        ], outline='white')
-
-    for p in facial_landmarks:
-        for i in range(5):
-            draw.ellipse([
-                (p[i] - 1.0, p[i + 5] - 1.0),
-                (p[i] + 1.0, p[i + 5] + 1.0)
-            ], outline='blue')
-
-    return img_copy
 
 
 def get_image_boxes(bounding_boxes, img, size=24):
