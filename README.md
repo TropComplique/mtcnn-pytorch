@@ -1,6 +1,7 @@
 # MTCNN
 
-`pytorch` implementation of **inference stage** of face detection algorithm described in [Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks](https://arxiv.org/abs/1604.02878).
+`pytorch` implementation of **inference stage** of face detection algorithm described in  
+[Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks](https://arxiv.org/abs/1604.02878).
 
 ## Example
 ![example of a face detection](images/example.png)
@@ -14,7 +15,7 @@ from PIL import Image
 image = Image.open('image.jpg')
 bounding_boxes, landmarks = detect_faces(image)
 ```
-For examples, see `test_on_images.ipynb`.
+For examples see `test_on_images.ipynb`.
 
 ## Requirements
 * pytorch 0.2
