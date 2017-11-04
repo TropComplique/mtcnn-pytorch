@@ -11,7 +11,16 @@ class Flatten(nn.Module):
         super(Flatten, self).__init__()
 
     def forward(self, x):
+        """
+        Arguments:
+            x: a float tensor with shape [batch_size, c, h, w].
+        Returns:
+            a float tensor with shape [batch_size, c*h*w].
+        """
+
+        # without this pretrained model isn't working
         x = x.transpose(3, 2).contiguous()
+
         return x.view(x.size(0), -1)
 
 
@@ -43,11 +52,18 @@ class PNet(nn.Module):
         self.conv4_1 = nn.Conv2d(32, 2, 1, 1)
         self.conv4_2 = nn.Conv2d(32, 4, 1, 1)
 
-        weights = np.load('nets/pnet.npy')[()]
+        weights = np.load('src/weights/pnet.npy')[()]
         for n, p in self.named_parameters():
             p.data = torch.FloatTensor(weights[n])
 
     def forward(self, x):
+        """
+        Arguments:
+            x: a float tensor with shape [batch_size, 3, h, w].
+        Returns:
+            b: a float tensor with shape [batch_size, 4, h', w'].
+            a: a float tensor with shape [batch_size, 2, h', w'].
+        """
         x = self.features(x)
         a = self.conv4_1(x)
         b = self.conv4_2(x)
@@ -81,11 +97,18 @@ class RNet(nn.Module):
         self.conv5_1 = nn.Linear(128, 2)
         self.conv5_2 = nn.Linear(128, 4)
 
-        weights = np.load('nets/rnet.npy')[()]
+        weights = np.load('src/weights/rnet.npy')[()]
         for n, p in self.named_parameters():
             p.data = torch.FloatTensor(weights[n])
 
     def forward(self, x):
+        """
+        Arguments:
+            x: a float tensor with shape [batch_size, 3, h, w].
+        Returns:
+            b: a float tensor with shape [batch_size, 4].
+            a: a float tensor with shape [batch_size, 2].
+        """
         x = self.features(x)
         a = self.conv5_1(x)
         b = self.conv5_2(x)
@@ -125,11 +148,19 @@ class ONet(nn.Module):
         self.conv6_2 = nn.Linear(256, 4)
         self.conv6_3 = nn.Linear(256, 10)
 
-        weights = np.load('nets/onet.npy')[()]
+        weights = np.load('src/weights/onet.npy')[()]
         for n, p in self.named_parameters():
             p.data = torch.FloatTensor(weights[n])
 
     def forward(self, x):
+        """
+        Arguments:
+            x: a float tensor with shape [batch_size, 3, h, w].
+        Returns:
+            c: a float tensor with shape [batch_size, 10].
+            b: a float tensor with shape [batch_size, 4].
+            a: a float tensor with shape [batch_size, 2].
+        """
         x = self.features(x)
         a = self.conv6_1(x)
         b = self.conv6_2(x)

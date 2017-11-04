@@ -10,7 +10,7 @@ def show_bboxes(img, bounding_boxes, facial_landmarks=[]):
         facial_landmarks: a float numpy array of shape [n, 10].
 
     Returns:
-        an instance of PIL.Image
+        an instance of PIL.Image.
     """
 
     img_copy = img.copy()

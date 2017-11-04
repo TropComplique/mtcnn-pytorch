@@ -1,31 +1,13 @@
 import numpy as np
-import math
 from PIL import Image
-import torch
-from torch.autograd import Variable
 
 
-def preprocess(img):
-    """Preprocessing step before feeding the network.
-
-    Arguments:
-        img: a float numpy array of shape [h, w, c].
-
-    Returns:
-        a float numpy array of shape [1, c, h, w].
-    """
-
-    img = img.transpose((2, 0, 1))
-    img = np.expand_dims(img, 0)
-    img = (img - 127.5)*0.0078125
-    return img
-
-
-def nms(boxes, overlap_threshold, mode='union'):
+def nms(boxes, overlap_threshold=0.5, mode='union'):
     """Non-maximum suppression.
 
     Arguments:
-        boxes: a float numpy array of shape [n, 5].
+        boxes: a float numpy array of shape [n, 5],
+            where each row is (xmin, ymin, xmax, ymax, score).
         overlap_threshold: a float number.
         mode: 'union' or 'min'.
 
@@ -86,92 +68,6 @@ def nms(boxes, overlap_threshold, mode='union'):
     return pick
 
 
-def generate_bboxes(probs, offsets, scale, threshold):
-    """Generate bounding boxes.
-
-    Arguments:
-        probs: a float numpy array of shape [n, m].
-        offsets: a float numpy array of shape [1, 4, n, m].
-        scale: a float number.
-        threshold: a float number.
-
-    Returns:
-        a float numpy array of shape [n_boxes, 9]
-    """
-
-    # applying P-Net is equivalent, in some sense, to
-    # moving 12x12 window with stride 2
-    stride = 2
-    cell_size = 12
-
-    # indices of boxes where there is probably a face
-    inds = np.where(probs > threshold)
-
-    if inds[0].size == 0:
-        return np.array([])
-
-    # transformations of bounding boxes
-    tx1, ty1, tx2, ty2 = [offsets[0, i, inds[0], inds[1]] for i in range(4)]
-    # they are defined as:
-    # w = x2 - x1 + 1
-    # h = y2 - y1 + 1
-    # x1_true = x1 + tx1*w
-    # x2_true = x2 + tx2*w
-    # y1_true = y1 + ty1*h
-    # y2_true = y2 + ty2*h
-
-    offsets = np.array([tx1, ty1, tx2, ty2])
-    score = probs[inds[0], inds[1]]
-
-    # P-Net is applied to scaled images
-    # so we need to rescale bounding boxes back
-    bounding_boxes = np.vstack([
-        np.round((stride*inds[1] + 1.0)/scale),
-        np.round((stride*inds[0] + 1.0)/scale),
-        np.round((stride*inds[1] + 1.0 + cell_size)/scale),
-        np.round((stride*inds[0] + 1.0 + cell_size)/scale),
-        score, offsets
-    ])
-    # why one is added?
-
-    return bounding_boxes.T
-
-
-def run_first_stage(img, net, scale, threshold):
-    """Run P-Net, generate bounding boxes, and do NMS.
-
-    Arguments:
-        img: an instance of PIL.Image.
-        net: P-Net.
-        scale: a float number.
-        threshold: a float number.
-
-    Returns:
-        bounding boxes with scores and offsets
-    """
-
-    # scale image and convert to float array
-    width, height = img.size
-    sh = math.ceil(height*scale)
-    sw = math.ceil(width*scale)
-    img_resized = img.resize((sw, sh), Image.BILINEAR)
-    img_resized = np.asarray(img_resized, 'float32')
-
-    img_resized = Variable(torch.FloatTensor(preprocess(img_resized)))
-    output = net(img_resized)
-    probs = output[1].data.numpy()[0, 1, :, :]
-    offsets = output[0].data.numpy()
-    # offsets: transformations to true bounding boxes
-    # probs: probability of a face at each sliding window
-
-    boxes = generate_bboxes(probs, offsets, scale, threshold)
-    if len(boxes) == 0:
-        return None
-
-    pick = nms(boxes[:, 0:5], 0.5, mode='union')
-    return boxes
-
-
 def convert_to_square(bboxes):
     """Convert bounding boxes to a square form.
 
@@ -180,7 +76,7 @@ def convert_to_square(bboxes):
 
     Returns:
         a float numpy array of shape [n, 5],
-            squared bounding boxes
+            squared bounding boxes.
     """
 
     square_bboxes = np.zeros_like(bboxes)
@@ -197,13 +93,14 @@ def convert_to_square(bboxes):
 
 def calibrate_box(bboxes, offsets):
     """Transform bounding boxes to be more like true bounding boxes.
+    'offsets' is one of the outputs of the nets.
 
     Arguments:
-        bboxes: a float numpy array of shape [n, 5]
-        offsets: a float numpy array of shape [n, 4]
+        bboxes: a float numpy array of shape [n, 5].
+        offsets: a float numpy array of shape [n, 4].
 
     Returns:
-        a float numpy array of shape [n, 5]
+        a float numpy array of shape [n, 5].
     """
     x1, y1, x2, y2 = [bboxes[:, i] for i in range(4)]
     w = x2 - x1 + 1.0
@@ -211,13 +108,13 @@ def calibrate_box(bboxes, offsets):
     w = np.expand_dims(w, 1)
     h = np.expand_dims(h, 1)
 
+    # this is what happening here:
     # tx1, ty1, tx2, ty2 = [offsets[:, i] for i in range(4)]
-    # w = x2 - x1 + 1
-    # h = y2 - y1 + 1
     # x1_true = x1 + tx1*w
     # y1_true = y1 + ty1*h
     # x2_true = x2 + tx2*w
     # y2_true = y2 + ty2*h
+    # below is just more compact form of this
 
     # are offsets always such that
     # x1 < x2 and y1 < y2 ?
@@ -233,7 +130,7 @@ def get_image_boxes(bounding_boxes, img, size=24):
     Arguments:
         bounding_boxes: a float numpy array of shape [n, 5].
         img: an instance of PIL.Image.
-        size: an integer.
+        size: an integer, size of cutouts.
 
     Returns:
         a float numpy array of shape [n, 3, size, size].
@@ -257,25 +154,31 @@ def get_image_boxes(bounding_boxes, img, size=24):
         img_box = img_box.resize((size, size), Image.BILINEAR)
         img_box = np.asarray(img_box, 'float32')
 
-        img_boxes[i, :, :, :] = preprocess(img_box)
+        img_boxes[i, :, :, :] = _preprocess(img_box)
 
     return img_boxes
 
 
 def correct_bboxes(bboxes, width, height):
-    """pad the the bboxes, alse restrict the size of it
+    """Crop boxes that are too big and get coordinates
+    with respect to cutouts.
 
     Arguments:
-        bboxes: a float numpy array of shape [n, 5].
+        bboxes: a float numpy array of shape [n, 5],
+            where each row is (xmin, ymin, xmax, ymax, score).
         width: a float number.
         height: a float number.
 
     Returns:
-        dy, dx : a float numpy arrays of shape [n]
-        edy, edx : a float numpy arrays of shape [n]
-        y, x : a float numpy arrays of shape [n]
-        ex, ex : a float numpy arrays of shape [n]
-        h, w: a float numpy arrays of shape [n]
+        dy, dx, edy, edx: a int numpy arrays of shape [n],
+            coordinates of the boxes with respect to the cutouts.
+        y, x, ey, ex: a int numpy arrays of shape [n],
+            corrected ymin, xmin, ymax, xmax.
+        h, w: a int numpy arrays of shape [n],
+            just heights and widths of boxes.
+
+        in the following order:
+            [dy, edy, dx, edx, y, ey, x, ex, w, h].
     """
 
     x1, y1, x2, y2 = [bboxes[:, i] for i in range(4)]
@@ -318,3 +221,18 @@ def correct_bboxes(bboxes, width, height):
     return_list = [i.astype('int32') for i in return_list]
 
     return return_list
+
+
+def _preprocess(img):
+    """Preprocessing step before feeding the network.
+
+    Arguments:
+        img: a float numpy array of shape [h, w, c].
+
+    Returns:
+        a float numpy array of shape [1, c, h, w].
+    """
+    img = img.transpose((2, 0, 1))
+    img = np.expand_dims(img, 0)
+    img = (img - 127.5)*0.0078125
+    return img
