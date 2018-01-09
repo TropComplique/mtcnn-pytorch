@@ -131,7 +131,7 @@ class ONet(nn.Module):
             ('prelu2', nn.PReLU(64)),
             ('pool2', nn.MaxPool2d(3, 2, ceil_mode=True)),
 
-            ('conv3', nn.Conv2d(64, 64, 2, 1)),
+            ('conv3', nn.Conv2d(64, 64, 3, 1)),
             ('prelu3', nn.PReLU(64)),
             ('pool3', nn.MaxPool2d(2, 2, ceil_mode=True)),
 
