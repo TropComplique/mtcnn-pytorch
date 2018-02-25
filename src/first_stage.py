@@ -26,7 +26,7 @@ def run_first_stage(image, net, scale, threshold):
     # scale the image and convert it to a float array
     width, height = image.size
     sw, sh = math.ceil(width*scale), math.ceil(height*scale)
-    img = image.resize((sw, sh), Image.BILINEAR)
+    img = image.resize((int(sw), int(sh)), Image.BILINEAR)
     img = np.asarray(img, 'float32')
 
     img = Variable(torch.FloatTensor(_preprocess(img)), volatile=True)
