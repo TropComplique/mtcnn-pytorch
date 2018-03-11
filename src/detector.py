@@ -95,6 +95,8 @@ def detect_faces(image, min_face_size=20.0,
     # STAGE 3
 
     img_boxes = get_image_boxes(bounding_boxes, image, size=48)
+    if len(img_boxes) == 0: 
+        return [], []
     img_boxes = Variable(torch.FloatTensor(img_boxes), volatile=True)
     output = onet(img_boxes)
     landmarks = output[0].data.numpy()  # shape [n_boxes, 10]
