@@ -57,10 +57,15 @@ def detect_faces(image, min_face_size=20.0,
     # run P-Net on different scales
     for s in scales:
         boxes = run_first_stage(image, pnet, scale=s, threshold=thresholds[0])
-        bounding_boxes.append(boxes)
-
+        bounding_boxes.append(boxes)    
+        
     # collect boxes (and offsets, and scores) from different scales
     bounding_boxes = [i for i in bounding_boxes if i is not None]
+    
+    # check if there are valid bounding boxes
+    if len(bounding_boxes) == 0:
+      return [], []
+    
     bounding_boxes = np.vstack(bounding_boxes)
 
     keep = nms(bounding_boxes[:, 0:5], nms_thresholds[0])
