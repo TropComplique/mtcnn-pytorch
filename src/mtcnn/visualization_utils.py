@@ -1,6 +1,6 @@
 from PIL import ImageDraw
 
-
+# TODO: remove PIL dependency
 def show_bboxes(img, bounding_boxes, facial_landmarks=[]):
     """Draw bounding boxes and facial landmarks.
 
