@@ -7,7 +7,12 @@
 ![example of a face detection](images/example.png)
 
 ## How to use it
-Just download the repository and then do this
+Install the package using pip:
+```bash
+pip install mtcnn-pytorch
+```
+
+Example usage:
 ```python
 from mtcnn import detect_faces
 import cv2
