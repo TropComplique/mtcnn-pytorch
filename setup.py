@@ -1,11 +1,9 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='mtcnn-pytorch',
-    version='0.1.0',
-    # adding packages
+    version='1.0.0',
     packages=['mtcnn'],
-    package_dir={'mtcnn': 'src/mtcnn'},
     package_data={'mtcnn': ['weights/*.npy']},
     url='',
     license='',

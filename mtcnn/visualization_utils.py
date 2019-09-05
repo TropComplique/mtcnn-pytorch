@@ -1,11 +1,12 @@
-from PIL import ImageDraw
+import cv2
+from PIL import ImageDraw, Image
 
-# TODO: remove PIL dependency
+
 def show_bboxes(img, bounding_boxes, facial_landmarks=[]):
     """Draw bounding boxes and facial landmarks.
 
     Arguments:
-        img: an instance of PIL.Image.
+        img: image array
         bounding_boxes: a float numpy array of shape [n, 5].
         facial_landmarks: a float numpy array of shape [n, 10].
 
@@ -13,8 +14,10 @@ def show_bboxes(img, bounding_boxes, facial_landmarks=[]):
         an instance of PIL.Image.
     """
 
-    img_copy = img.copy()
-    draw = ImageDraw.Draw(img_copy)
+    cv2_im = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    pil_im = Image.fromarray(cv2_im)
+
+    draw = ImageDraw.Draw(pil_im)
 
     for b in bounding_boxes:
         draw.rectangle([
@@ -28,4 +31,4 @@ def show_bboxes(img, bounding_boxes, facial_landmarks=[]):
                 (p[i] + 1.0, p[i + 5] + 1.0)
             ], outline='blue')
 
-    return img_copy
+    return pil_im
