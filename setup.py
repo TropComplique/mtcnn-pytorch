@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='mtcnn-pytorch',
-    version='1.0.0',
+    version='1.0.2',
     packages=['mtcnn'],
     package_data={'mtcnn': ['weights/*.npy']},
     url='',
