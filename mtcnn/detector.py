@@ -11,7 +11,7 @@ def detect_faces(image, min_face_size=20.0,
                  nms_thresholds=[0.7, 0.7, 0.7]):
     """
     Arguments:
-        image: an instance of PIL.Image.
+        image: image array
         min_face_size: a float number.
         thresholds: a list of length 3.
         nms_thresholds: a list of length 3.
@@ -28,7 +28,7 @@ def detect_faces(image, min_face_size=20.0,
     onet.eval()
 
     # BUILD AN IMAGE PYRAMID
-    width, height = image.size
+    height, width, _ = image.shape
     min_length = min(height, width)
 
     min_detection_size = 12
@@ -76,10 +76,11 @@ def detect_faces(image, min_face_size=20.0,
     # STAGE 2
 
     img_boxes = get_image_boxes(bounding_boxes, image, size=24)
-    img_boxes = Variable(torch.FloatTensor(img_boxes), volatile=True)
-    output = rnet(img_boxes)
-    offsets = output[0].data.numpy()  # shape [n_boxes, 4]
-    probs = output[1].data.numpy()  # shape [n_boxes, 2]
+    with torch.no_grad():
+        img_boxes = Variable(torch.FloatTensor(img_boxes))
+        output = rnet(img_boxes)
+        offsets = output[0].data.numpy()  # shape [n_boxes, 4]
+        probs = output[1].data.numpy()  # shape [n_boxes, 2]
 
     keep = np.where(probs[:, 1] > thresholds[1])[0]
     bounding_boxes = bounding_boxes[keep]
@@ -97,11 +98,13 @@ def detect_faces(image, min_face_size=20.0,
     img_boxes = get_image_boxes(bounding_boxes, image, size=48)
     if len(img_boxes) == 0: 
         return [], []
-    img_boxes = Variable(torch.FloatTensor(img_boxes), volatile=True)
-    output = onet(img_boxes)
-    landmarks = output[0].data.numpy()  # shape [n_boxes, 10]
-    offsets = output[1].data.numpy()  # shape [n_boxes, 4]
-    probs = output[2].data.numpy()  # shape [n_boxes, 2]
+
+    with torch.no_grad():
+        img_boxes = Variable(torch.FloatTensor(img_boxes))
+        output = onet(img_boxes)
+        landmarks = output[0].data.numpy()  # shape [n_boxes, 10]
+        offsets = output[1].data.numpy()  # shape [n_boxes, 4]
+        probs = output[2].data.numpy()  # shape [n_boxes, 2]
 
     keep = np.where(probs[:, 1] > thresholds[2])[0]
     bounding_boxes = bounding_boxes[keep]

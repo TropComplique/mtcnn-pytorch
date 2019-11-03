@@ -7,19 +7,26 @@
 ![example of a face detection](images/example.png)
 
 ## How to use it
-Just download the repository and then do this
-```python
-from src import detect_faces
-from PIL import Image
+Install the package using pip:
+```bash
+pip install mtcnn-pytorch
+```
 
-image = Image.open('image.jpg')
+Example usage:
+```python
+from mtcnn import detect_faces
+import cv2
+
+image = cv2.imread('image.jpg')
 bounding_boxes, landmarks = detect_faces(image)
 ```
 For examples see `test_on_images.ipynb`.
 
 ## Requirements
-* pytorch 0.2
-* Pillow, numpy
+* pytorch 1.0
+* opencv-python, numpy
+
+* Pillow for visualization_utils
 
 ## Credit
 This implementation is heavily inspired by:
